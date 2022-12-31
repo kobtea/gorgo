@@ -2,5 +2,9 @@ working_dir: ./tmp/
 users:
   - name: kobtea
     regex: jsonnet
+    repo_policies:
+      - ./example/policy/github_repo.rego
   - name: kobtea
     regex: exporter
+    repo_policies:
+      - ./example/policy/github_repo.rego

@@ -13,8 +13,8 @@ import (
 )
 
 const (
-	metadataDirname = "metadata"
-	repoFilename    = "repo.json"
+	MetadataDirname = "metadata"
+	RepoFilename    = "repo.json"
 )
 
 func Fetch(ctx context.Context, cfg *config.Config) error {
@@ -62,12 +62,12 @@ func fetchUserRepositories(ctx context.Context, name string, regexes []*config.R
 					if err != nil {
 						return err
 					}
-					dir := filepath.Join(outputDir, metadataDirname, name, *repo.Name)
+					dir := filepath.Join(outputDir, MetadataDirname, name, *repo.Name)
 					if err = os.MkdirAll(dir, 0755); err != nil {
 						return err
 					}
 
-					if err = os.WriteFile(filepath.Join(dir, repoFilename), j, 0644); err != nil {
+					if err = os.WriteFile(filepath.Join(dir, RepoFilename), j, 0644); err != nil {
 						return err
 					}
 				}

@@ -35,8 +35,9 @@ type Config struct {
 }
 
 type User struct {
-	Name  string  `yaml:"name"`
-	Regex *Regexp `yaml:"regex,omitempty"`
+	Name         string   `yaml:"name"`
+	Regex        *Regexp  `yaml:"regex,omitempty"`
+	RepoPolicies []string `yaml:"repo_policies"`
 }
 
 func (s *User) UnmarshalYAML(unmarshal func(interface{}) error) error {
