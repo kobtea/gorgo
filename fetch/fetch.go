@@ -17,8 +17,7 @@ const (
 	repoFilename    = "repo.json"
 )
 
-func Fetch(cfg *config.Config) error {
-	ctx := context.Background()
+func Fetch(ctx context.Context, cfg *config.Config) error {
 	userm := map[string][]*config.Regexp{}
 	for _, user := range cfg.Users {
 		userm[user.Name] = append(userm[user.Name], user.Regex)

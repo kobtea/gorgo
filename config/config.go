@@ -36,7 +36,6 @@ type Config struct {
 
 type User struct {
 	Name  string  `yaml:"name"`
-	Type  string  `yaml:"type,omitempty"`
 	Regex *Regexp `yaml:"regex,omitempty"`
 }
 

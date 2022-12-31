@@ -1,0 +1,6 @@
+working_dir: ./tmp/
+users:
+  - name: kobtea
+    regex: jsonnet
+  - name: kobtea
+    regex: exporter
