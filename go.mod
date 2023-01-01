@@ -3,7 +3,7 @@ module github.com/kobtea/gorgo
 go 1.19
 
 require (
-	github.com/go-git/go-git/v5 v5.5.1
+	github.com/go-git/go-git/v5 v5.2.0
 	github.com/google/go-github/v48 v48.2.0
 	github.com/open-policy-agent/conftest v0.37.0
 	github.com/open-policy-agent/opa v0.47.4
@@ -26,8 +26,6 @@ require (
 	github.com/KeisukeYamashita/go-vcl v0.4.0 // indirect
 	github.com/Microsoft/go-winio v0.5.2 // indirect
 	github.com/OneOfOne/xxhash v1.2.8 // indirect
-	github.com/ProtonMail/go-crypto v0.0.0-20221026131551-cf6655e29de4 // indirect
-	github.com/acomagu/bufpipe v1.0.3 // indirect
 	github.com/agext/levenshtein v1.2.3 // indirect
 	github.com/agnivade/levenshtein v1.1.1 // indirect
 	github.com/apparentlymart/go-textseg/v13 v13.0.0 // indirect
@@ -36,7 +34,6 @@ require (
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bgentry/go-netrc v0.0.0-20140422174119-9fd32a8b3d3d // indirect
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
-	github.com/cloudflare/circl v1.1.0 // indirect
 	github.com/cockroachdb/apd/v2 v2.0.1 // indirect
 	github.com/containerd/containerd v1.6.10 // indirect
 	github.com/containerd/typeurl v1.0.2 // indirect
@@ -94,7 +91,6 @@ require (
 	github.com/olekukonko/tablewriter v0.0.5 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.1.0-rc1 // indirect
-	github.com/pjbgf/sha1cd v0.2.3 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/prometheus/client_golang v1.14.0 // indirect
@@ -107,7 +103,6 @@ require (
 	github.com/sergi/go-diff v1.1.0 // indirect
 	github.com/shteou/go-ignore v0.3.1 // indirect
 	github.com/sirupsen/logrus v1.9.0 // indirect
-	github.com/skeema/knownhosts v1.1.0 // indirect
 	github.com/spdx/tools-golang v0.2.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/subosito/gotenv v1.2.0 // indirect

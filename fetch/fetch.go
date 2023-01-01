@@ -3,11 +3,13 @@ package fetch
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
 
 	"github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/google/go-github/v48/github"
 	"github.com/kobtea/gorgo/config"
 	"github.com/kobtea/gorgo/storage"
@@ -79,10 +81,11 @@ func fetchUserRepositories(ctx context.Context, name string, regexes []*config.R
 					// source
 					srcPath := st.UserRepoPath(SourceDirname, "github.com", name, *repo.Name)
 					gitRepo, err := git.PlainOpen(srcPath)
-					if err == git.ErrRepositoryNotExists {
+					if errors.Is(err, git.ErrRepositoryNotExists) {
 						gitRepo, err = git.PlainClone(srcPath, false, &git.CloneOptions{
 							URL:   *repo.CloneURL,
 							Depth: 1,
+							Auth:  &http.BasicAuth{Username: "username", Password: os.Getenv("GITHUB_TOKEN")},
 						})
 						if err != nil {
 							return err
@@ -94,9 +97,11 @@ func fetchUserRepositories(ctx context.Context, name string, regexes []*config.R
 						if err != nil {
 							return err
 						}
-						if err = wt.Pull(&git.PullOptions{Depth: 1}); err != nil {
+						if err = wt.Pull(&git.PullOptions{
+							Depth: 1,
+							Auth:  &http.BasicAuth{Username: "username", Password: os.Getenv("GITHUB_TOKEN")},
+						}); err != nil && !errors.Is(err, git.NoErrAlreadyUpToDate) {
 							return err
-
 						}
 					}
 				}
