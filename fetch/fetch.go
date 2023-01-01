@@ -7,13 +7,16 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/go-git/go-git/v5"
 	"github.com/google/go-github/v48/github"
 	"github.com/kobtea/gorgo/config"
+	"github.com/kobtea/gorgo/storage"
 	"golang.org/x/oauth2"
 )
 
 const (
 	MetadataDirname = "metadata"
+	SourceDirname   = "src"
 	RepoFilename    = "repo.json"
 )
 
@@ -31,7 +34,7 @@ func Fetch(ctx context.Context, cfg *config.Config) error {
 	return nil
 }
 
-func NewClient(ctx context.Context) (*github.Client, error) {
+func newClient(ctx context.Context) (*github.Client, error) {
 	token := os.Getenv("GITHUB_TOKEN")
 	if len(token) == 0 {
 		return nil, fmt.Errorf("require GITHUB_TOKEN env var")
@@ -45,12 +48,14 @@ func NewClient(ctx context.Context) (*github.Client, error) {
 }
 
 func fetchUserRepositories(ctx context.Context, name string, regexes []*config.Regexp, outputDir string) error {
-	cli, err := NewClient(ctx)
+	st := storage.NewStorage(outputDir)
+	cli, err := newClient(ctx)
 	if err != nil {
 		return err
 	}
 	opt := &github.RepositoryListOptions{}
 	for {
+		// TODO: support ghe domain
 		repos, resp, err := cli.Repositories.List(ctx, name, opt)
 		if err != nil {
 			return err
@@ -58,17 +63,41 @@ func fetchUserRepositories(ctx context.Context, name string, regexes []*config.R
 		for _, repo := range repos {
 			for _, r := range regexes {
 				if r.Match([]byte(*repo.Name)) {
+					// metadata
 					j, err := json.Marshal(repo)
 					if err != nil {
 						return err
 					}
-					dir := filepath.Join(outputDir, MetadataDirname, name, *repo.Name)
+					dir := st.UserRepoPath(MetadataDirname, "github.com", name, *repo.Name)
 					if err = os.MkdirAll(dir, 0755); err != nil {
 						return err
 					}
-
 					if err = os.WriteFile(filepath.Join(dir, RepoFilename), j, 0644); err != nil {
 						return err
+					}
+
+					// source
+					srcPath := st.UserRepoPath(SourceDirname, "github.com", name, *repo.Name)
+					gitRepo, err := git.PlainOpen(srcPath)
+					if err == git.ErrRepositoryNotExists {
+						gitRepo, err = git.PlainClone(srcPath, false, &git.CloneOptions{
+							URL:   *repo.CloneURL,
+							Depth: 1,
+						})
+						if err != nil {
+							return err
+						}
+					} else if err != nil {
+						return err
+					} else {
+						wt, err := gitRepo.Worktree()
+						if err != nil {
+							return err
+						}
+						if err = wt.Pull(&git.PullOptions{Depth: 1}); err != nil {
+							return err
+
+						}
 					}
 				}
 			}

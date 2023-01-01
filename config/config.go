@@ -35,9 +35,10 @@ type Config struct {
 }
 
 type User struct {
-	Name         string   `yaml:"name"`
-	Regex        *Regexp  `yaml:"regex,omitempty"`
-	RepoPolicies []string `yaml:"repo_policies"`
+	Name         string         `yaml:"name"`
+	Regex        *Regexp        `yaml:"regex,omitempty"`
+	RepoPolicies []string       `yaml:"repo_policies"`
+	SrcPolicies  []SourcePolicy `yaml:"src_policies"`
 }
 
 func (s *User) UnmarshalYAML(unmarshal func(interface{}) error) error {
@@ -50,6 +51,12 @@ func (s *User) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	}
 	*s = User(d)
 	return nil
+}
+
+type SourcePolicy struct {
+	Input    string   `yaml:"input"`
+	Combine  bool     `yaml:"combine"`
+	Policies []string `yaml:"policies"`
 }
 
 func Validate(c *Config) []error {

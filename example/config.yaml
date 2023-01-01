@@ -1,9 +1,14 @@
-working_dir: ./tmp/
+working_dir: ./testdata/tmp/
 users:
   - name: kobtea
     regex: jsonnet
     repo_policies:
       - ./example/policy/github_repo.rego
+    src_policies:
+      - input: .github/workflows
+        combine: false
+        policies:
+          - ./example/policy/github_actions.rego
   - name: kobtea
     regex: exporter
     repo_policies:
