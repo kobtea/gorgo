@@ -52,7 +52,9 @@ func Fetch(ctx context.Context, cfg *config.Config) error {
 			}
 		}
 	}
-	storage.DoGc()
+	if err := storage.DoGc(); err != nil {
+		return err
+	}
 	return nil
 }
 

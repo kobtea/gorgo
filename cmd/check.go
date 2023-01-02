@@ -11,9 +11,9 @@ import (
 var checkCmd = &cobra.Command{
 	Use:   "check",
 	Short: "Test policies",
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := context.Background()
-		check.Check(ctx, cfg)
+		return check.Check(ctx, cfg)
 	},
 }
 

@@ -86,7 +86,7 @@ func (s *Storage) UpdateSource(domain, name, repo, cloneUrl, tokenEnvvarName str
 	path := s.RepoPath(SourceDirname, domain, name, repo)
 	gitRepo, err := git.PlainOpen(path)
 	if errors.Is(err, git.ErrRepositoryNotExists) {
-		gitRepo, err = git.PlainClone(path, false, &git.CloneOptions{
+		_, err = git.PlainClone(path, false, &git.CloneOptions{
 			URL:   cloneUrl,
 			Depth: 1,
 			Auth:  &http.BasicAuth{Username: "username", Password: token},

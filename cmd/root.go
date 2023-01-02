@@ -55,10 +55,14 @@ func initConfig() {
 	loggerConfig.Level = lv
 	loggerConfig.EncoderConfig.EncodeTime = zapcore.TimeEncoderOfLayout(time.RFC3339)
 	logger, err := loggerConfig.Build()
-	defer logger.Sync()
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
+	defer func() {
+		if er := logger.Sync(); er != nil {
+			fmt.Println(er)
+		}
+	}()
 	zap.ReplaceGlobals(logger)
 }

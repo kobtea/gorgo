@@ -43,7 +43,7 @@ func Check(ctx context.Context, cfg *config.Config) error {
 					Combine:       ConftestConfig.Combine,
 					Policy:        ConftestConfig.Policies,
 				}
-				logger.Debugw(fmt.Sprintf("conftest"), "policy", ConftestConfig.Policies, "input", files)
+				logger.Debugw("conftest", "policy", ConftestConfig.Policies, "input", files)
 				res, err := r.Run(ctx, files)
 				if err != nil {
 					return err
@@ -74,7 +74,7 @@ func Check(ctx context.Context, cfg *config.Config) error {
 					Combine:       ConftestConfig.Combine,
 					Policy:        ConftestConfig.Policies,
 				}
-				logger.Debugw(fmt.Sprintf("conftest"), "policy", ConftestConfig.Policies, "input", files)
+				logger.Debugw("conftest", "policy", ConftestConfig.Policies, "input", files)
 				res, err := r.Run(ctx, files)
 				if err != nil {
 					return err
