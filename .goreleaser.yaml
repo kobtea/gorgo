@@ -1,0 +1,47 @@
+before:
+  hooks:
+    - go mod tidy
+builds:
+  - flags: -a -tags netgo
+    ldflags:
+      - -s -w
+      - -X github.com/kobtea/gorgo/cmd/cmd.Version={{.Version}}
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+    goarch:
+      - amd64
+      - arm
+      - arm64
+    goarm:
+      - 6
+      - 7
+    ignore:
+      - goos: darwin
+        goarch: 386
+      - goos: linux
+        goarch: arm
+        goarm: 7
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - '^docs:'
+      - '^test:'
+      - '^cut:'
+      - '^typo'
+dockers:
+  - image_templates:
+      - ghcr.io/kobtea/gorgo:latest
+      - ghcr.io/kobtea/gorgo:v{{.Version}}
+    use: buildx
+    build_flag_templates:
+      - --platform=linux/amd64
+  - image_templates:
+      - ghcr.io/kobtea/gorgo:latest
+      - ghcr.io/kobtea/gorgo:v{{.Version}}
+    use: buildx
+    build_flag_templates:
+      - --platform=linux/arm64
