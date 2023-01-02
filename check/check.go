@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/kobtea/gorgo/config"
-	"github.com/kobtea/gorgo/fetch"
 	"github.com/kobtea/gorgo/storage"
 	"github.com/open-policy-agent/conftest/output"
 	"github.com/open-policy-agent/conftest/runner"
@@ -13,17 +12,20 @@ import (
 
 func Check(ctx context.Context, cfg *config.Config) error {
 	var result []output.CheckResult
-	st := storage.NewStorage(cfg.WorkingDir)
+	st, err := storage.NewStorage(cfg.WorkingDir)
+	if err != nil {
+		return err
+	}
 	for _, ghConfig := range cfg.GithubConfigs {
 		for _, userRepoConfig := range ghConfig.UserRepoConfigs {
 			for _, ConftestConfig := range userRepoConfig.ConftestConfigs {
 				var prefix string
 				var glob string
 				if ConftestConfig.Target == config.TargetRepo {
-					prefix = fetch.MetadataDirname
-					glob = fetch.RepoFilename
+					prefix = storage.MetadataDirname
+					glob = storage.RepoFilename
 				} else if ConftestConfig.Target == config.TargetSrc {
-					prefix = fetch.SourceDirname
+					prefix = storage.SourceDirname
 					glob = ConftestConfig.Input
 				} else {
 					return fmt.Errorf("invalid target type: %s", ConftestConfig.Target)

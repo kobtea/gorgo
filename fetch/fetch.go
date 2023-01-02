@@ -3,33 +3,27 @@ package fetch
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"os"
-	"path/filepath"
 
-	"github.com/go-git/go-git/v5"
-	"github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/google/go-github/v48/github"
 	"github.com/kobtea/gorgo/config"
 	"github.com/kobtea/gorgo/storage"
 	"golang.org/x/oauth2"
 )
 
-const (
-	MetadataDirname = "metadata"
-	SourceDirname   = "src"
-	RepoFilename    = "repo.json"
-)
-
 func Fetch(ctx context.Context, cfg *config.Config) error {
+	storage, err := storage.NewStorage(cfg.WorkingDir)
+	if err != nil {
+		return err
+	}
 	for _, ghConfig := range cfg.GithubConfigs {
 		userm := map[string][]*config.Regexp{}
 		for _, userRepoConfig := range ghConfig.UserRepoConfigs {
 			userm[userRepoConfig.Name] = append(userm[userRepoConfig.Name], userRepoConfig.Regex)
 		}
 		for user, regexes := range userm {
-			err := fetchUserRepositories(ctx, user, regexes, cfg.WorkingDir, &githubOption{
+			err := fetchUserRepositories(ctx, storage, user, regexes, &githubOption{
 				domain:          ghConfig.Domain(),
 				baseUrl:         ghConfig.ApiEndpoint,
 				uploadUrl:       ghConfig.UploadEndpoint,
@@ -41,6 +35,7 @@ func Fetch(ctx context.Context, cfg *config.Config) error {
 		}
 		// TODO: support org
 	}
+	storage.DoGc()
 	return nil
 }
 
@@ -70,8 +65,7 @@ func newClient(ctx context.Context, option *githubOption) (*github.Client, error
 	}
 }
 
-func fetchUserRepositories(ctx context.Context, name string, regexes []*config.Regexp, outputDir string, ghOption *githubOption) error {
-	st := storage.NewStorage(outputDir)
+func fetchUserRepositories(ctx context.Context, storage *storage.Storage, name string, regexes []*config.Regexp, ghOption *githubOption) error {
 	cli, err := newClient(ctx, ghOption)
 	if err != nil {
 		return err
@@ -90,39 +84,13 @@ func fetchUserRepositories(ctx context.Context, name string, regexes []*config.R
 					if err != nil {
 						return err
 					}
-					dir := st.UserRepoPath(MetadataDirname, ghOption.domain, name, *repo.Name)
-					if err = os.MkdirAll(dir, 0755); err != nil {
-						return err
-					}
-					if err = os.WriteFile(filepath.Join(dir, RepoFilename), j, 0644); err != nil {
+					if err := storage.UpdateRepoMetadata(ghOption.domain, name, *repo.Name, j); err != nil {
 						return err
 					}
 
 					// source
-					srcPath := st.UserRepoPath(SourceDirname, ghOption.domain, name, *repo.Name)
-					gitRepo, err := git.PlainOpen(srcPath)
-					if errors.Is(err, git.ErrRepositoryNotExists) {
-						gitRepo, err = git.PlainClone(srcPath, false, &git.CloneOptions{
-							URL:   *repo.CloneURL,
-							Depth: 1,
-							Auth:  &http.BasicAuth{Username: "username", Password: os.Getenv(ghOption.tokenEnvvarName)},
-						})
-						if err != nil {
-							return err
-						}
-					} else if err != nil {
+					if err := storage.UpdateSource(ghOption.domain, name, *repo.Name, *repo.CloneURL, ghOption.tokenEnvvarName); err != nil {
 						return err
-					} else {
-						wt, err := gitRepo.Worktree()
-						if err != nil {
-							return err
-						}
-						if err = wt.Pull(&git.PullOptions{
-							Depth: 1,
-							Auth:  &http.BasicAuth{Username: "username", Password: os.Getenv(ghOption.tokenEnvvarName)},
-						}); err != nil && !errors.Is(err, git.NoErrAlreadyUpToDate) {
-							return err
-						}
 					}
 				}
 			}

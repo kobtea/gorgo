@@ -1,23 +1,39 @@
 package storage
 
 import (
+	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"regexp"
+
+	"github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/plumbing/transport/http"
+)
+
+const (
+	MetadataDirname = "metadata"
+	SourceDirname   = "src"
+	RepoFilename    = "repo.json"
 )
 
 type Storage struct {
-	workingDir string
+	workingDir   string
+	gcCandidates []string
 }
 
-func NewStorage(workingDir string) *Storage {
-	return &Storage{
+func NewStorage(workingDir string) (*Storage, error) {
+	s := &Storage{
 		workingDir: workingDir,
 	}
+	if err := s.prepareGc(); err != nil {
+		return nil, err
+	}
+	return s, nil
 }
 
 func (s *Storage) UserRepoPath(prefix, baseUrl, user, repo string) string {
-	return filepath.Join(s.workingDir, prefix, baseUrl, user, repo)
+	return filepath.Clean(filepath.Join(s.workingDir, prefix, baseUrl, user, repo))
 }
 
 func (s *Storage) ListUserRepoPaths(prefix, baseUrl, user string, regex *regexp.Regexp, glob string) ([]string, error) {
@@ -37,4 +53,83 @@ func (s *Storage) ListUserRepoPaths(prefix, baseUrl, user string, regex *regexp.
 		}
 	}
 	return res, nil
+}
+
+func (s *Storage) ListDirs() ([]string, error) {
+	dirs, err := filepath.Glob(filepath.Join(s.workingDir, "*/*/*/*"))
+	if err != nil {
+		return []string{}, err
+	}
+	return dirs, nil
+}
+
+func (s *Storage) UpdateRepoMetadata(domain, name, repo string, data []byte) error {
+	path := s.UserRepoPath(MetadataDirname, domain, name, repo)
+	if err := os.MkdirAll(path, 0755); err != nil {
+		return err
+	}
+	if err := os.WriteFile(filepath.Join(path, RepoFilename), data, 0644); err != nil {
+		return err
+	}
+	s.flagActive(path)
+	return nil
+}
+
+func (s *Storage) UpdateSource(domain, name, repo, cloneUrl, tokenEnvvarName string) error {
+	token := os.Getenv(tokenEnvvarName)
+	path := s.UserRepoPath(SourceDirname, domain, name, repo)
+	gitRepo, err := git.PlainOpen(path)
+	if errors.Is(err, git.ErrRepositoryNotExists) {
+		gitRepo, err = git.PlainClone(path, false, &git.CloneOptions{
+			URL:   cloneUrl,
+			Depth: 1,
+			Auth:  &http.BasicAuth{Username: "username", Password: token},
+		})
+		if err != nil {
+			return err
+		}
+	} else if err != nil {
+		return err
+	} else {
+		wt, err := gitRepo.Worktree()
+		if err != nil {
+			return err
+		}
+		if err = wt.Pull(&git.PullOptions{
+			Depth: 1,
+			Auth:  &http.BasicAuth{Username: "username", Password: token},
+		}); err != nil && !errors.Is(err, git.NoErrAlreadyUpToDate) {
+			return err
+		}
+	}
+	s.flagActive(path)
+	return nil
+}
+
+func (s *Storage) prepareGc() error {
+	dirs, err := s.ListDirs()
+	if err != nil {
+		return fmt.Errorf("failed preparing for gc: %s", err.Error())
+	}
+	s.gcCandidates = dirs
+	return nil
+}
+
+func (s *Storage) flagActive(path string) {
+	for i, v := range s.gcCandidates {
+		if v == path {
+			s.gcCandidates = append(s.gcCandidates[:i], s.gcCandidates[i+1:]...)
+			break
+		}
+	}
+}
+
+func (s *Storage) DoGc() error {
+	for _, path := range s.gcCandidates {
+		if err := os.RemoveAll(path); err != nil {
+			return err
+		}
+		// TODO: remove parent directory if empty
+	}
+	return nil
 }
