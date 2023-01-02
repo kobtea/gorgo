@@ -21,11 +21,12 @@ type Config struct {
 }
 
 type GithubConfig struct {
-	domain          string           `yaml:"domain,omitempty"`
-	ApiEndpoint     string           `yaml:"api_endpoint,omitempty"`
-	UploadEndpoint  string           `yaml:"upload_endpoint,omitempty"`
-	tokenEnvvarName string           `yaml:"token_envvar_name"`
-	UserRepoConfigs []UserRepoConfig `yaml:"user_repo_configs"`
+	domain          string       `yaml:"domain,omitempty"`
+	ApiEndpoint     string       `yaml:"api_endpoint,omitempty"`
+	UploadEndpoint  string       `yaml:"upload_endpoint,omitempty"`
+	tokenEnvvarName string       `yaml:"token_envvar_name"`
+	UserRepoConfigs []RepoConfig `yaml:"user_repo_configs"`
+	OrgRepoConfigs  []RepoConfig `yaml:"org_repo_configs"`
 }
 
 func (c GithubConfig) Domain() string {
@@ -44,21 +45,21 @@ func (c GithubConfig) EnvvarName() string {
 	}
 }
 
-type UserRepoConfig struct {
+type RepoConfig struct {
 	Name            string           `yaml:"name"`
 	Regex           *Regexp          `yaml:"regex,omitempty"`
 	ConftestConfigs []ConftestConfig `yaml:"conftest_configs"`
 }
 
-func (c *UserRepoConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
-	type raw UserRepoConfig
+func (c *RepoConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	type raw RepoConfig
 	d := raw{
 		Regex: &Regexp{regexp.MustCompile(defaultRegex), false, false},
 	}
 	if err := unmarshal(&d); err != nil {
 		return err
 	}
-	*c = UserRepoConfig(d)
+	*c = RepoConfig(d)
 	return nil
 }
 
@@ -102,6 +103,16 @@ func Parse(buf []byte) (*Config, error) {
 				}
 				if ConftestConfig.Target == TargetSrc {
 					userRepoConfig.Regex.UsedWithSrc = true
+				}
+			}
+		}
+		for _, orgRepoConfig := range ghConfig.OrgRepoConfigs {
+			for _, ConftestConfig := range orgRepoConfig.ConftestConfigs {
+				if ConftestConfig.Target == TargetRepo {
+					orgRepoConfig.Regex.UsedWithRepo = true
+				}
+				if ConftestConfig.Target == TargetSrc {
+					orgRepoConfig.Regex.UsedWithSrc = true
 				}
 			}
 		}

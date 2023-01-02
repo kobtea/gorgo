@@ -33,7 +33,22 @@ func Fetch(ctx context.Context, cfg *config.Config) error {
 				return err
 			}
 		}
-		// TODO: support org
+
+		orgm := map[string][]*config.Regexp{}
+		for _, orgRepoConfig := range ghConfig.OrgRepoConfigs {
+			orgm[orgRepoConfig.Name] = append(orgm[orgRepoConfig.Name], orgRepoConfig.Regex)
+		}
+		for org, regexes := range orgm {
+			err := fetchOrgRepositories(ctx, storage, org, regexes, &githubOption{
+				domain:          ghConfig.Domain(),
+				baseUrl:         ghConfig.ApiEndpoint,
+				uploadUrl:       ghConfig.UploadEndpoint,
+				tokenEnvvarName: ghConfig.EnvvarName(),
+			})
+			if err != nil {
+				return err
+			}
+		}
 	}
 	storage.DoGc()
 	return nil
@@ -73,6 +88,47 @@ func fetchUserRepositories(ctx context.Context, storage *storage.Storage, name s
 	opt := &github.RepositoryListOptions{}
 	for {
 		repos, resp, err := cli.Repositories.List(ctx, name, opt)
+		if err != nil {
+			return err
+		}
+		for _, repo := range repos {
+			for _, r := range regexes {
+				if r.Match([]byte(*repo.Name)) {
+					// metadata
+					if r.UsedWithRepo {
+						j, err := json.Marshal(repo)
+						if err != nil {
+							return err
+						}
+						if err := storage.UpdateRepoMetadata(ghOption.domain, name, *repo.Name, j); err != nil {
+							return err
+						}
+					}
+					// source
+					if r.UsedWithSrc {
+						if err := storage.UpdateSource(ghOption.domain, name, *repo.Name, *repo.CloneURL, ghOption.tokenEnvvarName); err != nil {
+							return err
+						}
+					}
+				}
+			}
+		}
+		if resp.NextPage == 0 {
+			break
+		}
+		opt.Page = resp.NextPage
+	}
+	return nil
+}
+
+func fetchOrgRepositories(ctx context.Context, storage *storage.Storage, name string, regexes []*config.Regexp, ghOption *githubOption) error {
+	cli, err := newClient(ctx, ghOption)
+	if err != nil {
+		return err
+	}
+	opt := &github.RepositoryListByOrgOptions{}
+	for {
+		repos, resp, err := cli.Repositories.ListByOrg(ctx, name, opt)
 		if err != nil {
 			return err
 		}

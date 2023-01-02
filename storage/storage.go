@@ -32,13 +32,13 @@ func NewStorage(workingDir string) (*Storage, error) {
 	return s, nil
 }
 
-func (s *Storage) UserRepoPath(prefix, baseUrl, user, repo string) string {
-	return filepath.Clean(filepath.Join(s.workingDir, prefix, baseUrl, user, repo))
+func (s *Storage) RepoPath(prefix, baseUrl, owner, repo string) string {
+	return filepath.Clean(filepath.Join(s.workingDir, prefix, baseUrl, owner, repo))
 }
 
-func (s *Storage) ListUserRepoPaths(prefix, baseUrl, user string, regex *regexp.Regexp, glob string) ([]string, error) {
+func (s *Storage) ListRepoPaths(prefix, baseUrl, owner string, regex *regexp.Regexp, glob string) ([]string, error) {
 	var res []string
-	root := filepath.Join(s.workingDir, prefix, baseUrl, user)
+	root := filepath.Join(s.workingDir, prefix, baseUrl, owner)
 	dirs, err := os.ReadDir(root)
 	if err != nil {
 		return []string{}, err
@@ -64,7 +64,7 @@ func (s *Storage) ListDirs() ([]string, error) {
 }
 
 func (s *Storage) UpdateRepoMetadata(domain, name, repo string, data []byte) error {
-	path := s.UserRepoPath(MetadataDirname, domain, name, repo)
+	path := s.RepoPath(MetadataDirname, domain, name, repo)
 	if err := os.MkdirAll(path, 0755); err != nil {
 		return err
 	}
@@ -77,7 +77,7 @@ func (s *Storage) UpdateRepoMetadata(domain, name, repo string, data []byte) err
 
 func (s *Storage) UpdateSource(domain, name, repo, cloneUrl, tokenEnvvarName string) error {
 	token := os.Getenv(tokenEnvvarName)
-	path := s.UserRepoPath(SourceDirname, domain, name, repo)
+	path := s.RepoPath(SourceDirname, domain, name, repo)
 	gitRepo, err := git.PlainOpen(path)
 	if errors.Is(err, git.ErrRepositoryNotExists) {
 		gitRepo, err = git.PlainClone(path, false, &git.CloneOptions{

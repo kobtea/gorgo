@@ -19,3 +19,10 @@ github_configs:
           - target: repo
             policies:
               - ./example/policy/github_repo.rego
+    org_repo_configs:
+      - name: prometheus
+        regex: node_exporter
+        conftest_configs:
+          - target: repo
+            policies:
+              - ./example/policy/github_repo.rego
