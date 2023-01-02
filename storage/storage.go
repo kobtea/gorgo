@@ -9,6 +9,7 @@ import (
 
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
+	"go.uber.org/zap"
 )
 
 const (
@@ -20,15 +21,18 @@ const (
 type Storage struct {
 	workingDir   string
 	gcCandidates []string
+	logger       *zap.SugaredLogger
 }
 
 func NewStorage(workingDir string) (*Storage, error) {
 	s := &Storage{
 		workingDir: workingDir,
+		logger:     zap.S().Named("storage"),
 	}
 	if err := s.prepareGc(); err != nil {
 		return nil, err
 	}
+	s.logger.Debug("initialized storage")
 	return s, nil
 }
 
@@ -64,6 +68,7 @@ func (s *Storage) ListDirs() ([]string, error) {
 }
 
 func (s *Storage) UpdateRepoMetadata(domain, name, repo string, data []byte) error {
+	s.logger.Info(fmt.Sprintf("update repo metadata: %s/%s/%s", domain, name, repo))
 	path := s.RepoPath(MetadataDirname, domain, name, repo)
 	if err := os.MkdirAll(path, 0755); err != nil {
 		return err
@@ -76,6 +81,7 @@ func (s *Storage) UpdateRepoMetadata(domain, name, repo string, data []byte) err
 }
 
 func (s *Storage) UpdateSource(domain, name, repo, cloneUrl, tokenEnvvarName string) error {
+	s.logger.Info(fmt.Sprintf("update source: %s/%s/%s", domain, name, repo))
 	token := os.Getenv(tokenEnvvarName)
 	path := s.RepoPath(SourceDirname, domain, name, repo)
 	gitRepo, err := git.PlainOpen(path)
@@ -126,6 +132,7 @@ func (s *Storage) flagActive(path string) {
 
 func (s *Storage) DoGc() error {
 	for _, path := range s.gcCandidates {
+		s.logger.Info(fmt.Sprintf("gc: remove unused dir: %s", path))
 		if err := os.RemoveAll(path); err != nil {
 			return err
 		}

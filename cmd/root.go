@@ -3,13 +3,17 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/kobtea/gorgo/config"
 	"github.com/spf13/cobra"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
 
 var cfgFile string
 var cfg *config.Config
+var logLevel string
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
@@ -26,6 +30,7 @@ func Execute() {
 func init() {
 	cobra.OnInitialize(initConfig)
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "./gorgo.yaml", "config file")
+	rootCmd.PersistentFlags().StringVar(&logLevel, "log-level", "info", "log level")
 }
 
 // initConfig reads in config file and ENV variables if set.
@@ -40,4 +45,20 @@ func initConfig() {
 		fmt.Println(err)
 		os.Exit(1)
 	}
+
+	loggerConfig := zap.NewProductionConfig()
+	lv, err := zap.ParseAtomicLevel(logLevel)
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+	loggerConfig.Level = lv
+	loggerConfig.EncoderConfig.EncodeTime = zapcore.TimeEncoderOfLayout(time.RFC3339)
+	logger, err := loggerConfig.Build()
+	defer logger.Sync()
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+	zap.ReplaceGlobals(logger)
 }

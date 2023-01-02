@@ -8,9 +8,12 @@ import (
 	"github.com/kobtea/gorgo/storage"
 	"github.com/open-policy-agent/conftest/output"
 	"github.com/open-policy-agent/conftest/runner"
+	"go.uber.org/zap"
 )
 
 func Check(ctx context.Context, cfg *config.Config) error {
+	logger := zap.S().Named("check")
+	logger.Info("check data")
 	var result []output.CheckResult
 	st, err := storage.NewStorage(cfg.WorkingDir)
 	if err != nil {
@@ -40,6 +43,7 @@ func Check(ctx context.Context, cfg *config.Config) error {
 					Combine:       ConftestConfig.Combine,
 					Policy:        ConftestConfig.Policies,
 				}
+				logger.Debugw(fmt.Sprintf("conftest"), "policy", ConftestConfig.Policies, "input", files)
 				res, err := r.Run(ctx, files)
 				if err != nil {
 					return err
@@ -70,6 +74,7 @@ func Check(ctx context.Context, cfg *config.Config) error {
 					Combine:       ConftestConfig.Combine,
 					Policy:        ConftestConfig.Policies,
 				}
+				logger.Debugw(fmt.Sprintf("conftest"), "policy", ConftestConfig.Policies, "input", files)
 				res, err := r.Run(ctx, files)
 				if err != nil {
 					return err
