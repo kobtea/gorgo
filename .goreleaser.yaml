@@ -5,7 +5,7 @@ builds:
   - flags: -a -tags netgo
     ldflags:
       - -s -w
-      - -X github.com/kobtea/gorgo/cmd/cmd.Version={{.Version}}
+      - -X github.com/kobtea/gorgo/cmd.Version={{.Version}}
     env:
       - CGO_ENABLED=0
     goos:
