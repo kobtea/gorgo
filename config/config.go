@@ -50,20 +50,22 @@ type UserRepoConfig struct {
 	ConftestConfigs []ConftestConfig `yaml:"conftest_configs"`
 }
 
-func (s *UserRepoConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
+func (c *UserRepoConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	type raw UserRepoConfig
 	d := raw{
-		Regex: &Regexp{regexp.MustCompile(defaultRegex)},
+		Regex: &Regexp{regexp.MustCompile(defaultRegex), false, false},
 	}
 	if err := unmarshal(&d); err != nil {
 		return err
 	}
-	*s = UserRepoConfig(d)
+	*c = UserRepoConfig(d)
 	return nil
 }
 
 type Regexp struct {
 	*regexp.Regexp
+	UsedWithRepo bool
+	UsedWithSrc  bool
 }
 
 func (r *Regexp) UnmarshalYAML(unmarshal func(interface{}) error) error {
@@ -91,6 +93,20 @@ func Parse(buf []byte) (*Config, error) {
 		WorkingDir: DefaultWorkingDir,
 	}
 	err := yaml.Unmarshal(buf, &cfg)
+	// initialize flags in regex
+	for _, ghConfig := range cfg.GithubConfigs {
+		for _, userRepoConfig := range ghConfig.UserRepoConfigs {
+			for _, ConftestConfig := range userRepoConfig.ConftestConfigs {
+				if ConftestConfig.Target == TargetRepo {
+					userRepoConfig.Regex.UsedWithRepo = true
+				}
+				if ConftestConfig.Target == TargetSrc {
+					userRepoConfig.Regex.UsedWithSrc = true
+				}
+			}
+		}
+	}
+
 	if err != nil {
 		return nil, err
 	}

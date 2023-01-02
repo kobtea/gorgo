@@ -80,17 +80,20 @@ func fetchUserRepositories(ctx context.Context, storage *storage.Storage, name s
 			for _, r := range regexes {
 				if r.Match([]byte(*repo.Name)) {
 					// metadata
-					j, err := json.Marshal(repo)
-					if err != nil {
-						return err
+					if r.UsedWithRepo {
+						j, err := json.Marshal(repo)
+						if err != nil {
+							return err
+						}
+						if err := storage.UpdateRepoMetadata(ghOption.domain, name, *repo.Name, j); err != nil {
+							return err
+						}
 					}
-					if err := storage.UpdateRepoMetadata(ghOption.domain, name, *repo.Name, j); err != nil {
-						return err
-					}
-
 					// source
-					if err := storage.UpdateSource(ghOption.domain, name, *repo.Name, *repo.CloneURL, ghOption.tokenEnvvarName); err != nil {
-						return err
+					if r.UsedWithSrc {
+						if err := storage.UpdateSource(ghOption.domain, name, *repo.Name, *repo.CloneURL, ghOption.tokenEnvvarName); err != nil {
+							return err
+						}
 					}
 				}
 			}
