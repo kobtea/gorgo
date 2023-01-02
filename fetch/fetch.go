@@ -23,41 +23,61 @@ const (
 )
 
 func Fetch(ctx context.Context, cfg *config.Config) error {
-	userm := map[string][]*config.Regexp{}
-	for _, user := range cfg.Users {
-		userm[user.Name] = append(userm[user.Name], user.Regex)
-	}
-	for user, regexes := range userm {
-		err := fetchUserRepositories(ctx, user, regexes, cfg.WorkingDir)
-		if err != nil {
-			return err
+	for _, ghConfig := range cfg.GithubConfigs {
+		userm := map[string][]*config.Regexp{}
+		for _, userRepoConfig := range ghConfig.UserRepoConfigs {
+			userm[userRepoConfig.Name] = append(userm[userRepoConfig.Name], userRepoConfig.Regex)
 		}
+		for user, regexes := range userm {
+			err := fetchUserRepositories(ctx, user, regexes, cfg.WorkingDir, &githubOption{
+				domain:          ghConfig.Domain(),
+				baseUrl:         ghConfig.ApiEndpoint,
+				uploadUrl:       ghConfig.UploadEndpoint,
+				tokenEnvvarName: ghConfig.EnvvarName(),
+			})
+			if err != nil {
+				return err
+			}
+		}
+		// TODO: support org
 	}
 	return nil
 }
 
-func newClient(ctx context.Context) (*github.Client, error) {
-	token := os.Getenv("GITHUB_TOKEN")
+type githubOption struct {
+	domain          string
+	baseUrl         string
+	uploadUrl       string
+	tokenEnvvarName string
+}
+
+func newClient(ctx context.Context, option *githubOption) (*github.Client, error) {
+	if len(option.tokenEnvvarName) == 0 {
+		return nil, fmt.Errorf("require github api token")
+	}
+	token := os.Getenv(option.tokenEnvvarName)
 	if len(token) == 0 {
-		return nil, fmt.Errorf("require GITHUB_TOKEN env var")
+		return nil, fmt.Errorf("require %s env var", option.tokenEnvvarName)
 	}
 	ts := oauth2.StaticTokenSource(
 		&oauth2.Token{AccessToken: token},
 	)
 	tc := oauth2.NewClient(ctx, ts)
-
-	return github.NewClient(tc), nil
+	if len(option.baseUrl) == 0 {
+		return github.NewClient(tc), nil
+	} else {
+		return github.NewEnterpriseClient(option.baseUrl, option.uploadUrl, tc)
+	}
 }
 
-func fetchUserRepositories(ctx context.Context, name string, regexes []*config.Regexp, outputDir string) error {
+func fetchUserRepositories(ctx context.Context, name string, regexes []*config.Regexp, outputDir string, ghOption *githubOption) error {
 	st := storage.NewStorage(outputDir)
-	cli, err := newClient(ctx)
+	cli, err := newClient(ctx, ghOption)
 	if err != nil {
 		return err
 	}
 	opt := &github.RepositoryListOptions{}
 	for {
-		// TODO: support ghe domain
 		repos, resp, err := cli.Repositories.List(ctx, name, opt)
 		if err != nil {
 			return err
@@ -70,7 +90,7 @@ func fetchUserRepositories(ctx context.Context, name string, regexes []*config.R
 					if err != nil {
 						return err
 					}
-					dir := st.UserRepoPath(MetadataDirname, "github.com", name, *repo.Name)
+					dir := st.UserRepoPath(MetadataDirname, ghOption.domain, name, *repo.Name)
 					if err = os.MkdirAll(dir, 0755); err != nil {
 						return err
 					}
@@ -79,13 +99,13 @@ func fetchUserRepositories(ctx context.Context, name string, regexes []*config.R
 					}
 
 					// source
-					srcPath := st.UserRepoPath(SourceDirname, "github.com", name, *repo.Name)
+					srcPath := st.UserRepoPath(SourceDirname, ghOption.domain, name, *repo.Name)
 					gitRepo, err := git.PlainOpen(srcPath)
 					if errors.Is(err, git.ErrRepositoryNotExists) {
 						gitRepo, err = git.PlainClone(srcPath, false, &git.CloneOptions{
 							URL:   *repo.CloneURL,
 							Depth: 1,
-							Auth:  &http.BasicAuth{Username: "username", Password: os.Getenv("GITHUB_TOKEN")},
+							Auth:  &http.BasicAuth{Username: "username", Password: os.Getenv(ghOption.tokenEnvvarName)},
 						})
 						if err != nil {
 							return err
@@ -99,7 +119,7 @@ func fetchUserRepositories(ctx context.Context, name string, regexes []*config.R
 						}
 						if err = wt.Pull(&git.PullOptions{
 							Depth: 1,
-							Auth:  &http.BasicAuth{Username: "username", Password: os.Getenv("GITHUB_TOKEN")},
+							Auth:  &http.BasicAuth{Username: "username", Password: os.Getenv(ghOption.tokenEnvvarName)},
 						}); err != nil && !errors.Is(err, git.NoErrAlreadyUpToDate) {
 							return err
 						}

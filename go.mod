@@ -6,7 +6,6 @@ require (
 	github.com/go-git/go-git/v5 v5.2.0
 	github.com/google/go-github/v48 v48.2.0
 	github.com/open-policy-agent/conftest v0.37.0
-	github.com/open-policy-agent/opa v0.47.4
 	github.com/spf13/cobra v1.6.1
 	github.com/stretchr/testify v1.8.1
 	golang.org/x/oauth2 v0.3.0
@@ -89,6 +88,7 @@ require (
 	github.com/morikuni/aec v1.0.0 // indirect
 	github.com/mpvl/unique v0.0.0-20150818121801-cbe035fff7de // indirect
 	github.com/olekukonko/tablewriter v0.0.5 // indirect
+	github.com/open-policy-agent/opa v0.47.4 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.1.0-rc1 // indirect
 	github.com/pkg/errors v0.9.1 // indirect

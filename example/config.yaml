@@ -1,15 +1,21 @@
 working_dir: ./testdata/tmp/
-users:
-  - name: kobtea
-    regex: jsonnet
-    repo_policies:
-      - ./example/policy/github_repo.rego
-    src_policies:
-      - input: .github/workflows
-        combine: false
-        policies:
-          - ./example/policy/github_actions.rego
-  - name: kobtea
-    regex: exporter
-    repo_policies:
-      - ./example/policy/github_repo.rego
+github_configs:
+  - token_envvar_name: GITHUB_TOKEN
+    user_repo_configs:
+      - name: kobtea
+        regex: jsonnet
+        conftest_configs:
+          - target: repo
+            policies:
+              - ./example/policy/github_repo.rego
+          - target: src
+            input: .github/workflows
+            combine: false
+            policies:
+              - ./example/policy/github_actions.rego
+      - name: kobtea
+        regex: exporter
+        conftest_configs:
+          - target: repo
+            policies:
+              - ./example/policy/github_repo.rego

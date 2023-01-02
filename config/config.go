@@ -1,16 +1,66 @@
 package config
 
 import (
-	"errors"
 	"regexp"
 
 	"gopkg.in/yaml.v2"
 )
 
 const (
-	DefaultWorkingDir = "tmp"
-	defaultRegex      = ".*"
+	DefaultWorkingDir       = "tmp"
+	defaultGithubDomain     = "github.com"
+	defaultGithubEnvvarName = "GITHUB_TOKEN"
+	defaultRegex            = ".*"
+	TargetRepo              = "repo"
+	TargetSrc               = "src"
 )
+
+type Config struct {
+	WorkingDir    string         `yaml:"working_dir"`
+	GithubConfigs []GithubConfig `yaml:"github_configs"`
+}
+
+type GithubConfig struct {
+	domain          string           `yaml:"domain,omitempty"`
+	ApiEndpoint     string           `yaml:"api_endpoint,omitempty"`
+	UploadEndpoint  string           `yaml:"upload_endpoint,omitempty"`
+	tokenEnvvarName string           `yaml:"token_envvar_name"`
+	UserRepoConfigs []UserRepoConfig `yaml:"user_repo_configs"`
+}
+
+func (c GithubConfig) Domain() string {
+	if len(c.domain) == 0 {
+		return defaultGithubDomain
+	} else {
+		return c.domain
+	}
+}
+
+func (c GithubConfig) EnvvarName() string {
+	if len(c.tokenEnvvarName) == 0 {
+		return defaultGithubEnvvarName
+	} else {
+		return c.tokenEnvvarName
+	}
+}
+
+type UserRepoConfig struct {
+	Name            string           `yaml:"name"`
+	Regex           *Regexp          `yaml:"regex,omitempty"`
+	ConftestConfigs []ConftestConfig `yaml:"conftest_configs"`
+}
+
+func (s *UserRepoConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	type raw UserRepoConfig
+	d := raw{
+		Regex: &Regexp{regexp.MustCompile(defaultRegex)},
+	}
+	if err := unmarshal(&d); err != nil {
+		return err
+	}
+	*s = UserRepoConfig(d)
+	return nil
+}
 
 type Regexp struct {
 	*regexp.Regexp
@@ -29,44 +79,11 @@ func (r *Regexp) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	return nil
 }
 
-type Config struct {
-	WorkingDir string `yaml:"working_dir"`
-	Users      []User `yaml:"users"`
-}
-
-type User struct {
-	Name         string         `yaml:"name"`
-	Regex        *Regexp        `yaml:"regex,omitempty"`
-	RepoPolicies []string       `yaml:"repo_policies"`
-	SrcPolicies  []SourcePolicy `yaml:"src_policies"`
-}
-
-func (s *User) UnmarshalYAML(unmarshal func(interface{}) error) error {
-	type raw User
-	d := raw{
-		Regex: &Regexp{regexp.MustCompile(defaultRegex)},
-	}
-	if err := unmarshal(&d); err != nil {
-		return err
-	}
-	*s = User(d)
-	return nil
-}
-
-type SourcePolicy struct {
+type ConftestConfig struct {
+	Target   string   `yaml:"target"`
 	Input    string   `yaml:"input"`
 	Combine  bool     `yaml:"combine"`
 	Policies []string `yaml:"policies"`
-}
-
-func Validate(c *Config) []error {
-	var res []error
-	for _, users := range c.Users {
-		if len(users.Name) == 0 {
-			res = append(res, errors.New("config error: require `name` at users"))
-		}
-	}
-	return res
 }
 
 func Parse(buf []byte) (*Config, error) {

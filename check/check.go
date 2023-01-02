@@ -2,6 +2,7 @@ package check
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/kobtea/gorgo/config"
 	"github.com/kobtea/gorgo/fetch"
@@ -13,40 +14,36 @@ import (
 func Check(ctx context.Context, cfg *config.Config) error {
 	var result []output.CheckResult
 	st := storage.NewStorage(cfg.WorkingDir)
-	// metadata
-	for _, elm := range cfg.Users {
-		files, err := st.ListUserRepoPaths(fetch.MetadataDirname, "github.com", elm.Name, elm.Regex.Regexp, fetch.RepoFilename)
-		if err != nil {
-			return err
-		}
+	for _, ghConfig := range cfg.GithubConfigs {
+		for _, userRepoConfig := range ghConfig.UserRepoConfigs {
+			for _, ConftestConfig := range userRepoConfig.ConftestConfigs {
+				var prefix string
+				var glob string
+				if ConftestConfig.Target == config.TargetRepo {
+					prefix = fetch.MetadataDirname
+					glob = fetch.RepoFilename
+				} else if ConftestConfig.Target == config.TargetSrc {
+					prefix = fetch.SourceDirname
+					glob = ConftestConfig.Input
+				} else {
+					return fmt.Errorf("invalid target type: %s", ConftestConfig.Target)
+				}
 
-		r := runner.TestRunner{
-			AllNamespaces: true,
-			Policy:        elm.RepoPolicies,
-		}
-		res, err := r.Run(ctx, files)
-		if err != nil {
-			return err
-		}
-		result = append(result, res...)
-	}
-	// source
-	for _, elm := range cfg.Users {
-		for _, srcPolicy := range elm.SrcPolicies {
-			paths, err := st.ListUserRepoPaths("src", "github.com", elm.Name, elm.Regex.Regexp, srcPolicy.Input)
-			if err != nil {
-				return err
+				files, err := st.ListUserRepoPaths(prefix, ghConfig.Domain(), userRepoConfig.Name, userRepoConfig.Regex.Regexp, glob)
+				if err != nil {
+					return err
+				}
+				r := runner.TestRunner{
+					AllNamespaces: true,
+					Combine:       ConftestConfig.Combine,
+					Policy:        ConftestConfig.Policies,
+				}
+				res, err := r.Run(ctx, files)
+				if err != nil {
+					return err
+				}
+				result = append(result, res...)
 			}
-			r := runner.TestRunner{
-				AllNamespaces: true,
-				Combine:       srcPolicy.Combine,
-				Policy:        srcPolicy.Policies,
-			}
-			res, err := r.Run(ctx, paths)
-			if err != nil {
-				return err
-			}
-			result = append(result, res...)
 		}
 	}
 
