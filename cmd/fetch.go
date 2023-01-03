@@ -3,6 +3,7 @@ package cmd
 import (
 	"context"
 
+	"github.com/kobtea/gorgo/config"
 	"github.com/kobtea/gorgo/fetch"
 	"github.com/spf13/cobra"
 )
@@ -13,6 +14,10 @@ var fetchCmd = &cobra.Command{
 	Short: "Retrieve repository metadata",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := context.Background()
+		cfg, err := config.ParseFromFile(cfgFile)
+		if err != nil {
+			return err
+		}
 		if err := fetch.Fetch(ctx, cfg); err != nil {
 			return err
 		}

@@ -14,6 +14,7 @@ var initialized = false
 func MustSync() {
 	if err := logger.Sync(); err != nil {
 		// see: https://github.com/uber-go/zap/issues/880
+		_ = true
 	}
 }
 

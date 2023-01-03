@@ -1,6 +1,8 @@
 package config
 
 import (
+	"fmt"
+	"os"
 	"regexp"
 
 	"gopkg.in/yaml.v2"
@@ -122,4 +124,16 @@ func Parse(buf []byte) (*Config, error) {
 		return nil, err
 	}
 	return &cfg, nil
+}
+
+func ParseFromFile(file string) (*Config, error) {
+	b, err := os.ReadFile(file)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read config file: %s", err.Error())
+	}
+	cfg, err := Parse(b)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse config file: %s", err.Error())
+	}
+	return cfg, nil
 }

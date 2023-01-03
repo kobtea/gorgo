@@ -1,18 +1,11 @@
 package cmd
 
 import (
-	"fmt"
-	"os"
-	"time"
-
-	"github.com/kobtea/gorgo/config"
+	"github.com/kobtea/gorgo/log"
 	"github.com/spf13/cobra"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 )
 
 var cfgFile string
-var cfg *config.Config
 var logLevel string
 
 // rootCmd represents the base command when called without any subcommands
@@ -35,34 +28,7 @@ func init() {
 
 // initConfig reads in config file and ENV variables if set.
 func initConfig() {
-	b, err := os.ReadFile(cfgFile)
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+	if err := log.InitLogger(&log.LoggerOption{Level: logLevel}); err != nil {
+		panic(err)
 	}
-	cfg, err = config.Parse(b)
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
-
-	loggerConfig := zap.NewProductionConfig()
-	lv, err := zap.ParseAtomicLevel(logLevel)
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
-	loggerConfig.Level = lv
-	loggerConfig.EncoderConfig.EncodeTime = zapcore.TimeEncoderOfLayout(time.RFC3339)
-	logger, err := loggerConfig.Build()
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
-	defer func() {
-		if er := logger.Sync(); er != nil {
-			// see: https://github.com/uber-go/zap/issues/880
-		}
-	}()
-	zap.ReplaceGlobals(logger)
 }
