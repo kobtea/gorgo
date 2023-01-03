@@ -20,35 +20,37 @@ func Fetch(ctx context.Context, cfg *config.Config) error {
 		return err
 	}
 	for _, ghConfig := range cfg.GithubConfigs {
-		userm := map[string][]*config.Regexp{}
-		for _, userRepoConfig := range ghConfig.UserRepoConfigs {
-			userm[userRepoConfig.Name] = append(userm[userRepoConfig.Name], userRepoConfig.Regex)
+		ghOpt := &githubOption{
+			domain:          ghConfig.Domain(),
+			baseUrl:         ghConfig.ApiEndpoint,
+			uploadUrl:       ghConfig.UploadEndpoint,
+			tokenEnvvarName: ghConfig.EnvvarName(),
 		}
-		for user, regexes := range userm {
-			err := fetchUserRepositories(ctx, storage, user, regexes, &githubOption{
-				domain:          ghConfig.Domain(),
-				baseUrl:         ghConfig.ApiEndpoint,
-				uploadUrl:       ghConfig.UploadEndpoint,
-				tokenEnvvarName: ghConfig.EnvvarName(),
-			})
+		ghCli, err := newClient(ctx, ghOpt)
+		if err != nil {
+			return err
+		}
+		ownerm := map[string][]*config.Regexp{}
+		for _, repoConfig := range ghConfig.RepoConfigs {
+			ownerm[repoConfig.Owner] = append(ownerm[repoConfig.Owner], repoConfig.Regex)
+		}
+		for owner, regexes := range ownerm {
+			user, _, err := ghCli.Users.Get(ctx, owner)
 			if err != nil {
 				return err
 			}
-		}
-
-		orgm := map[string][]*config.Regexp{}
-		for _, orgRepoConfig := range ghConfig.OrgRepoConfigs {
-			orgm[orgRepoConfig.Name] = append(orgm[orgRepoConfig.Name], orgRepoConfig.Regex)
-		}
-		for org, regexes := range orgm {
-			err := fetchOrgRepositories(ctx, storage, org, regexes, &githubOption{
-				domain:          ghConfig.Domain(),
-				baseUrl:         ghConfig.ApiEndpoint,
-				uploadUrl:       ghConfig.UploadEndpoint,
-				tokenEnvvarName: ghConfig.EnvvarName(),
-			})
-			if err != nil {
-				return err
+			if *user.Type == "User" {
+				err := fetchUserRepositories(ctx, storage, owner, regexes, ghCli, ghOpt)
+				if err != nil {
+					return err
+				}
+			} else if *user.Type == "Organization" {
+				err := fetchOrgRepositories(ctx, storage, owner, regexes, ghCli, ghOpt)
+				if err != nil {
+					return err
+				}
+			} else {
+				return fmt.Errorf("un-supported user type: %s", *user.Type)
 			}
 		}
 	}
@@ -84,14 +86,10 @@ func newClient(ctx context.Context, option *githubOption) (*github.Client, error
 	}
 }
 
-func fetchUserRepositories(ctx context.Context, storage *storage.Storage, name string, regexes []*config.Regexp, ghOption *githubOption) error {
-	cli, err := newClient(ctx, ghOption)
-	if err != nil {
-		return err
-	}
+func fetchUserRepositories(ctx context.Context, storage *storage.Storage, name string, regexes []*config.Regexp, ghClient *github.Client, ghOption *githubOption) error {
 	opt := &github.RepositoryListOptions{}
 	for {
-		repos, resp, err := cli.Repositories.List(ctx, name, opt)
+		repos, resp, err := ghClient.Repositories.List(ctx, name, opt)
 		if err != nil {
 			return err
 		}
@@ -125,14 +123,10 @@ func fetchUserRepositories(ctx context.Context, storage *storage.Storage, name s
 	return nil
 }
 
-func fetchOrgRepositories(ctx context.Context, storage *storage.Storage, name string, regexes []*config.Regexp, ghOption *githubOption) error {
-	cli, err := newClient(ctx, ghOption)
-	if err != nil {
-		return err
-	}
+func fetchOrgRepositories(ctx context.Context, storage *storage.Storage, name string, regexes []*config.Regexp, ghClient *github.Client, ghOption *githubOption) error {
 	opt := &github.RepositoryListByOrgOptions{}
 	for {
-		repos, resp, err := cli.Repositories.ListByOrg(ctx, name, opt)
+		repos, resp, err := ghClient.Repositories.ListByOrg(ctx, name, opt)
 		if err != nil {
 			return err
 		}

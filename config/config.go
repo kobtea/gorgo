@@ -27,8 +27,7 @@ type GithubConfig struct {
 	ApiEndpoint     string       `yaml:"api_endpoint,omitempty"`
 	UploadEndpoint  string       `yaml:"upload_endpoint,omitempty"`
 	tokenEnvvarName string       `yaml:"token_envvar_name"`
-	UserRepoConfigs []RepoConfig `yaml:"user_repo_configs"`
-	OrgRepoConfigs  []RepoConfig `yaml:"org_repo_configs"`
+	RepoConfigs     []RepoConfig `yaml:"repo_configs"`
 }
 
 func (c GithubConfig) Domain() string {
@@ -48,7 +47,7 @@ func (c GithubConfig) EnvvarName() string {
 }
 
 type RepoConfig struct {
-	Name            string           `yaml:"name"`
+	Owner           string           `yaml:"owner"`
 	Regex           *Regexp          `yaml:"regex,omitempty"`
 	ConftestConfigs []ConftestConfig `yaml:"conftest_configs"`
 }
@@ -98,23 +97,13 @@ func Parse(buf []byte) (*Config, error) {
 	err := yaml.Unmarshal(buf, &cfg)
 	// initialize flags in regex
 	for _, ghConfig := range cfg.GithubConfigs {
-		for _, userRepoConfig := range ghConfig.UserRepoConfigs {
-			for _, ConftestConfig := range userRepoConfig.ConftestConfigs {
+		for _, repoConfig := range ghConfig.RepoConfigs {
+			for _, ConftestConfig := range repoConfig.ConftestConfigs {
 				if ConftestConfig.Target == TargetRepo {
-					userRepoConfig.Regex.UsedWithRepo = true
+					repoConfig.Regex.UsedWithRepo = true
 				}
 				if ConftestConfig.Target == TargetSrc {
-					userRepoConfig.Regex.UsedWithSrc = true
-				}
-			}
-		}
-		for _, orgRepoConfig := range ghConfig.OrgRepoConfigs {
-			for _, ConftestConfig := range orgRepoConfig.ConftestConfigs {
-				if ConftestConfig.Target == TargetRepo {
-					orgRepoConfig.Regex.UsedWithRepo = true
-				}
-				if ConftestConfig.Target == TargetSrc {
-					orgRepoConfig.Regex.UsedWithSrc = true
+					repoConfig.Regex.UsedWithSrc = true
 				}
 			}
 		}

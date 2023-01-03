@@ -21,8 +21,8 @@ func Check(ctx context.Context, cfg *config.Config) error {
 		return err
 	}
 	for _, ghConfig := range cfg.GithubConfigs {
-		for _, userRepoConfig := range ghConfig.UserRepoConfigs {
-			for _, ConftestConfig := range userRepoConfig.ConftestConfigs {
+		for _, repoConfig := range ghConfig.RepoConfigs {
+			for _, ConftestConfig := range repoConfig.ConftestConfigs {
 				var prefix string
 				var glob string
 				if ConftestConfig.Target == config.TargetRepo {
@@ -35,38 +35,7 @@ func Check(ctx context.Context, cfg *config.Config) error {
 					return fmt.Errorf("invalid target type: %s", ConftestConfig.Target)
 				}
 
-				files, err := st.ListRepoPaths(prefix, ghConfig.Domain(), userRepoConfig.Name, userRepoConfig.Regex.Regexp, glob)
-				if err != nil {
-					return err
-				}
-				r := runner.TestRunner{
-					AllNamespaces: true,
-					Combine:       ConftestConfig.Combine,
-					Policy:        ConftestConfig.Policies,
-				}
-				logger.Debugw("conftest", "policy", ConftestConfig.Policies, "input", files)
-				res, err := r.Run(ctx, files)
-				if err != nil {
-					return err
-				}
-				result = append(result, res...)
-			}
-		}
-		for _, orgRepoConfig := range ghConfig.OrgRepoConfigs {
-			for _, ConftestConfig := range orgRepoConfig.ConftestConfigs {
-				var prefix string
-				var glob string
-				if ConftestConfig.Target == config.TargetRepo {
-					prefix = storage.MetadataDirname
-					glob = storage.RepoFilename
-				} else if ConftestConfig.Target == config.TargetSrc {
-					prefix = storage.SourceDirname
-					glob = ConftestConfig.Input
-				} else {
-					return fmt.Errorf("invalid target type: %s", ConftestConfig.Target)
-				}
-
-				files, err := st.ListRepoPaths(prefix, ghConfig.Domain(), orgRepoConfig.Name, orgRepoConfig.Regex.Regexp, glob)
+				files, err := st.ListRepoPaths(prefix, ghConfig.Domain(), repoConfig.Owner, repoConfig.Regex.Regexp, glob)
 				if err != nil {
 					return err
 				}

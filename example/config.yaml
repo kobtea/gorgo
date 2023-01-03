@@ -1,8 +1,8 @@
 working_dir: ./testdata/tmp/
 github_configs:
   - token_envvar_name: GITHUB_TOKEN
-    user_repo_configs:
-      - name: kobtea
+    repo_configs:
+      - owner: kobtea
         regex: jsonnet
         conftest_configs:
           - target: repo
@@ -13,14 +13,13 @@ github_configs:
             combine: false
             policies:
               - ./example/policy/github_actions.rego
-      - name: kobtea
+      - owner: kobtea
         regex: exporter
         conftest_configs:
           - target: repo
             policies:
               - ./example/policy/github_repo.rego
-    org_repo_configs:
-      - name: prometheus
+      - owner: prometheus
         regex: node_exporter
         conftest_configs:
           - target: repo
