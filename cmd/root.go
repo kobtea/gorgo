@@ -61,7 +61,7 @@ func initConfig() {
 	}
 	defer func() {
 		if er := logger.Sync(); er != nil {
-			fmt.Println(er)
+			// see: https://github.com/uber-go/zap/issues/880
 		}
 	}()
 	zap.ReplaceGlobals(logger)
