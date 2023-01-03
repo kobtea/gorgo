@@ -9,6 +9,7 @@ import (
 
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
+	"github.com/kobtea/gorgo/log"
 	"go.uber.org/zap"
 )
 
@@ -27,7 +28,7 @@ type Storage struct {
 func NewStorage(workingDir string) (*Storage, error) {
 	s := &Storage{
 		workingDir: workingDir,
-		logger:     zap.S().Named("storage"),
+		logger:     log.GetLogger().Named("storage"),
 	}
 	if err := s.prepareGc(); err != nil {
 		return nil, err

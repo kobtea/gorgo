@@ -5,14 +5,15 @@ import (
 	"fmt"
 
 	"github.com/kobtea/gorgo/config"
+	"github.com/kobtea/gorgo/log"
 	"github.com/kobtea/gorgo/storage"
 	"github.com/open-policy-agent/conftest/output"
 	"github.com/open-policy-agent/conftest/runner"
-	"go.uber.org/zap"
 )
 
 func Check(ctx context.Context, cfg *config.Config) error {
-	logger := zap.S().Named("check")
+	logger := log.GetLogger().Named("check")
+	defer log.MustSync()
 	logger.Info("check data")
 	var result []output.CheckResult
 	st, err := storage.NewStorage(cfg.WorkingDir)

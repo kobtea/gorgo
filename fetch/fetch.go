@@ -8,13 +8,13 @@ import (
 
 	"github.com/google/go-github/v48/github"
 	"github.com/kobtea/gorgo/config"
+	"github.com/kobtea/gorgo/log"
 	"github.com/kobtea/gorgo/storage"
-	"go.uber.org/zap"
 	"golang.org/x/oauth2"
 )
 
 func Fetch(ctx context.Context, cfg *config.Config) error {
-	zap.S().Named("fetch").Info("fetch data")
+	log.GetLogger().Named("fetch").Info("fetch data")
 	storage, err := storage.NewStorage(cfg.WorkingDir)
 	if err != nil {
 		return err
