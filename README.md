@@ -4,6 +4,8 @@ GitHub Organization Organizer.
 
 ## Overview
 
+**This project is unstable yet. So breaking change may be happened no notice.**
+
 Gorgo improves a regulation against repositories of GitHub organizations.
 It checks org repositories widely for policy compliance.
 
