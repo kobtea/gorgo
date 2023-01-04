@@ -11,7 +11,7 @@ import (
 	"github.com/open-policy-agent/conftest/runner"
 )
 
-func Check(ctx context.Context, cfg *config.Config) error {
+func Check(ctx context.Context, cfg *config.Config, out string) error {
 	logger := log.GetLogger().Named("check")
 	defer log.MustSync()
 	logger.Info("check data")
@@ -54,8 +54,7 @@ func Check(ctx context.Context, cfg *config.Config) error {
 		}
 	}
 
-	// FIXME: support multi format
-	outputter := output.Get("", output.Options{})
+	outputter := output.Get(out, output.Options{})
 	if err := outputter.Output(result); err != nil {
 		return err
 	}

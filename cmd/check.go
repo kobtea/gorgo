@@ -18,10 +18,15 @@ var checkCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		return check.Check(ctx, cfg)
+		out, err := cmd.Flags().GetString("output")
+		if err != nil {
+			return err
+		}
+		return check.Check(ctx, cfg, out)
 	},
 }
 
 func init() {
 	rootCmd.AddCommand(checkCmd)
+	checkCmd.Flags().StringP("output", "o", "stdout", "output format for results (stdout, json, tap, table, junit, github)")
 }
