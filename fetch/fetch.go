@@ -87,6 +87,7 @@ func newClient(ctx context.Context, option *githubOption) (*github.Client, error
 }
 
 func fetchUserRepositories(ctx context.Context, storage *storage.Storage, name string, regexes []*config.Regexp, ghClient *github.Client, ghOption *githubOption) error {
+	logger := log.GetLogger().Named("fetch.user")
 	opt := &github.RepositoryListOptions{}
 	for {
 		repos, resp, err := ghClient.Repositories.List(ctx, name, opt)
@@ -100,16 +101,17 @@ func fetchUserRepositories(ctx context.Context, storage *storage.Storage, name s
 					if r.UsedWithRepo {
 						j, err := json.Marshal(repo)
 						if err != nil {
-							return err
-						}
-						if err := storage.UpdateRepoMetadata(ghOption.domain, name, *repo.Name, j); err != nil {
-							return err
+							logger.Warnf("failed to marshal metadata: %s/%s/%s: %s", ghOption.domain, name, *repo.Name, err.Error())
+						} else {
+							if err := storage.UpdateRepoMetadata(ghOption.domain, name, *repo.Name, j); err != nil {
+								logger.Warnf("failed to update metadata: %s/%s/%s: %s", ghOption.domain, name, *repo.Name, err.Error())
+							}
 						}
 					}
 					// source
 					if r.UsedWithSrc {
 						if err := storage.UpdateSource(ghOption.domain, name, *repo.Name, *repo.CloneURL, ghOption.tokenEnvvarName); err != nil {
-							return err
+							logger.Warnf("failed to update source: %s/%s/%s: %s", ghOption.domain, name, *repo.Name, err.Error())
 						}
 					}
 				}
@@ -124,6 +126,7 @@ func fetchUserRepositories(ctx context.Context, storage *storage.Storage, name s
 }
 
 func fetchOrgRepositories(ctx context.Context, storage *storage.Storage, name string, regexes []*config.Regexp, ghClient *github.Client, ghOption *githubOption) error {
+	logger := log.GetLogger().Named("fetch.org")
 	opt := &github.RepositoryListByOrgOptions{}
 	for {
 		repos, resp, err := ghClient.Repositories.ListByOrg(ctx, name, opt)
@@ -137,16 +140,17 @@ func fetchOrgRepositories(ctx context.Context, storage *storage.Storage, name st
 					if r.UsedWithRepo {
 						j, err := json.Marshal(repo)
 						if err != nil {
-							return err
-						}
-						if err := storage.UpdateRepoMetadata(ghOption.domain, name, *repo.Name, j); err != nil {
-							return err
+							logger.Warnf("failed to marshal metadata: %s/%s/%s: %s", ghOption.domain, name, *repo.Name, err.Error())
+						} else {
+							if err := storage.UpdateRepoMetadata(ghOption.domain, name, *repo.Name, j); err != nil {
+								logger.Warnf("failed to update metadata: %s/%s/%s: %s", ghOption.domain, name, *repo.Name, err.Error())
+							}
 						}
 					}
 					// source
 					if r.UsedWithSrc {
 						if err := storage.UpdateSource(ghOption.domain, name, *repo.Name, *repo.CloneURL, ghOption.tokenEnvvarName); err != nil {
-							return err
+							logger.Warnf("failed to update source: %s/%s/%s: %s", ghOption.domain, name, *repo.Name, err.Error())
 						}
 					}
 				}
