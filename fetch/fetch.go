@@ -13,6 +13,11 @@ import (
 	"golang.org/x/oauth2"
 )
 
+type criteria struct {
+	regexp   *config.Regexp
+	archived bool
+}
+
 func Fetch(ctx context.Context, cfg *config.Config) error {
 	log.GetLogger().Named("fetch").Info("fetch data")
 	storage, err := storage.NewStorage(cfg.WorkingDir)
@@ -30,22 +35,22 @@ func Fetch(ctx context.Context, cfg *config.Config) error {
 		if err != nil {
 			return err
 		}
-		ownerm := map[string][]*config.Regexp{}
+		ownerm := map[string][]criteria{}
 		for _, repoConfig := range ghConfig.RepoConfigs {
-			ownerm[repoConfig.Owner] = append(ownerm[repoConfig.Owner], repoConfig.Regex)
+			ownerm[repoConfig.Owner] = append(ownerm[repoConfig.Owner], criteria{repoConfig.Regex, repoConfig.Archived})
 		}
-		for owner, regexes := range ownerm {
+		for owner, criterias := range ownerm {
 			user, _, err := ghCli.Users.Get(ctx, owner)
 			if err != nil {
 				return err
 			}
 			if *user.Type == "User" {
-				err := fetchUserRepositories(ctx, storage, owner, regexes, ghCli, ghOpt)
+				err := fetchUserRepositories(ctx, storage, owner, criterias, ghCli, ghOpt)
 				if err != nil {
 					return err
 				}
 			} else if *user.Type == "Organization" {
-				err := fetchOrgRepositories(ctx, storage, owner, regexes, ghCli, ghOpt)
+				err := fetchOrgRepositories(ctx, storage, owner, criterias, ghCli, ghOpt)
 				if err != nil {
 					return err
 				}
@@ -86,7 +91,7 @@ func newClient(ctx context.Context, option *githubOption) (*github.Client, error
 	}
 }
 
-func fetchUserRepositories(ctx context.Context, storage *storage.Storage, name string, regexes []*config.Regexp, ghClient *github.Client, ghOption *githubOption) error {
+func fetchUserRepositories(ctx context.Context, storage *storage.Storage, name string, criterias []criteria, ghClient *github.Client, ghOption *githubOption) error {
 	logger := log.GetLogger().Named("fetch.user")
 	opt := &github.RepositoryListOptions{}
 	for {
@@ -95,10 +100,10 @@ func fetchUserRepositories(ctx context.Context, storage *storage.Storage, name s
 			return err
 		}
 		for _, repo := range repos {
-			for _, r := range regexes {
-				if r.Match([]byte(*repo.Name)) {
+			for _, cri := range criterias {
+				if cri.regexp.Match([]byte(*repo.Name)) && !(!cri.archived && *repo.Archived) {
 					// metadata
-					if r.UsedWithRepo {
+					if cri.regexp.UsedWithRepo {
 						j, err := json.Marshal(repo)
 						if err != nil {
 							logger.Warnf("failed to marshal metadata: %s/%s/%s: %s", ghOption.domain, name, *repo.Name, err.Error())
@@ -109,7 +114,7 @@ func fetchUserRepositories(ctx context.Context, storage *storage.Storage, name s
 						}
 					}
 					// source
-					if r.UsedWithSrc {
+					if cri.regexp.UsedWithSrc {
 						if err := storage.UpdateSource(ghOption.domain, name, *repo.Name, *repo.CloneURL, ghOption.tokenEnvvarName); err != nil {
 							logger.Warnf("failed to update source: %s/%s/%s: %s", ghOption.domain, name, *repo.Name, err.Error())
 						}
@@ -125,7 +130,7 @@ func fetchUserRepositories(ctx context.Context, storage *storage.Storage, name s
 	return nil
 }
 
-func fetchOrgRepositories(ctx context.Context, storage *storage.Storage, name string, regexes []*config.Regexp, ghClient *github.Client, ghOption *githubOption) error {
+func fetchOrgRepositories(ctx context.Context, storage *storage.Storage, name string, criterias []criteria, ghClient *github.Client, ghOption *githubOption) error {
 	logger := log.GetLogger().Named("fetch.org")
 	opt := &github.RepositoryListByOrgOptions{}
 	for {
@@ -134,10 +139,10 @@ func fetchOrgRepositories(ctx context.Context, storage *storage.Storage, name st
 			return err
 		}
 		for _, repo := range repos {
-			for _, r := range regexes {
-				if r.Match([]byte(*repo.Name)) {
+			for _, cri := range criterias {
+				if cri.regexp.Match([]byte(*repo.Name)) && !(!cri.archived && *repo.Archived) {
 					// metadata
-					if r.UsedWithRepo {
+					if cri.regexp.UsedWithRepo {
 						j, err := json.Marshal(repo)
 						if err != nil {
 							logger.Warnf("failed to marshal metadata: %s/%s/%s: %s", ghOption.domain, name, *repo.Name, err.Error())
@@ -148,7 +153,7 @@ func fetchOrgRepositories(ctx context.Context, storage *storage.Storage, name st
 						}
 					}
 					// source
-					if r.UsedWithSrc {
+					if cri.regexp.UsedWithSrc {
 						if err := storage.UpdateSource(ghOption.domain, name, *repo.Name, *repo.CloneURL, ghOption.tokenEnvvarName); err != nil {
 							logger.Warnf("failed to update source: %s/%s/%s: %s", ghOption.domain, name, *repo.Name, err.Error())
 						}

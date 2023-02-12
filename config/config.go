@@ -13,6 +13,7 @@ const (
 	defaultGithubDomain     = "github.com"
 	defaultGithubEnvvarName = "GITHUB_TOKEN"
 	defaultRegex            = ".*"
+	defaultArchived         = false
 	TargetRepo              = "repo"
 	TargetSrc               = "src"
 )
@@ -49,13 +50,15 @@ func (c GithubConfig) EnvvarName() string {
 type RepoConfig struct {
 	Owner           string           `yaml:"owner"`
 	Regex           *Regexp          `yaml:"regex,omitempty"`
+	Archived        bool             `yaml:"archived"`
 	ConftestConfigs []ConftestConfig `yaml:"conftest_configs"`
 }
 
 func (c *RepoConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	type raw RepoConfig
 	d := raw{
-		Regex: &Regexp{regexp.MustCompile(defaultRegex), false, false},
+		Regex:    &Regexp{regexp.MustCompile(defaultRegex), false, false},
+		Archived: defaultArchived,
 	}
 	if err := unmarshal(&d); err != nil {
 		return err
