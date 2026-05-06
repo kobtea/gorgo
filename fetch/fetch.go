@@ -44,17 +44,18 @@ func Fetch(ctx context.Context, cfg *config.Config) error {
 			if err != nil {
 				return err
 			}
-			if *user.Type == "User" {
+			switch *user.Type {
+			case "User":
 				err := fetchUserRepositories(ctx, storage, owner, criterias, ghCli, ghOpt)
 				if err != nil {
 					return err
 				}
-			} else if *user.Type == "Organization" {
+			case "Organization":
 				err := fetchOrgRepositories(ctx, storage, owner, criterias, ghCli, ghOpt)
 				if err != nil {
 					return err
 				}
-			} else {
+			default:
 				return fmt.Errorf("un-supported user type: %s", *user.Type)
 			}
 		}
@@ -101,7 +102,7 @@ func fetchUserRepositories(ctx context.Context, storage *storage.Storage, name s
 		}
 		for _, repo := range repos {
 			for _, cri := range criterias {
-				if cri.regexp.Match([]byte(*repo.Name)) && !(!cri.archived && *repo.Archived) {
+				if cri.regexp.Match([]byte(*repo.Name)) && (cri.archived || !*repo.Archived) {
 					// metadata
 					if cri.regexp.UsedWithRepo {
 						j, err := json.Marshal(repo)
@@ -140,7 +141,7 @@ func fetchOrgRepositories(ctx context.Context, storage *storage.Storage, name st
 		}
 		for _, repo := range repos {
 			for _, cri := range criterias {
-				if cri.regexp.Match([]byte(*repo.Name)) && !(!cri.archived && *repo.Archived) {
+				if cri.regexp.Match([]byte(*repo.Name)) && (cri.archived || !*repo.Archived) {
 					// metadata
 					if cri.regexp.UsedWithRepo {
 						j, err := json.Marshal(repo)
