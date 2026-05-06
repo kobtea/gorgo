@@ -25,13 +25,14 @@ func Check(ctx context.Context, cfg *config.Config, out string) error {
 			for _, ConftestConfig := range repoConfig.ConftestConfigs {
 				var prefix string
 				var glob string
-				if ConftestConfig.Target == config.TargetRepo {
+				switch ConftestConfig.Target {
+				case config.TargetRepo:
 					prefix = storage.MetadataDirname
 					glob = storage.RepoFilename
-				} else if ConftestConfig.Target == config.TargetSrc {
+				case config.TargetSrc:
 					prefix = storage.SourceDirname
 					glob = ConftestConfig.Input
-				} else {
+				default:
 					return fmt.Errorf("invalid target type: %s", ConftestConfig.Target)
 				}
 
