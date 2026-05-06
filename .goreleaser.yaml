@@ -1,3 +1,4 @@
+version: 2
 before:
   hooks:
     - go mod tidy
@@ -24,6 +25,10 @@ builds:
       - goos: linux
         goarch: arm
         goarm: 7
+checksum:
+  name_template: 'checksums.txt'
+snapshot:
+  version_template: "{{ .Tag }}-next"
 changelog:
   sort: asc
   filters:
@@ -32,16 +37,12 @@ changelog:
       - '^test:'
       - '^cut:'
       - '^typo'
-dockers:
-  - image_templates:
-      - ghcr.io/kobtea/gorgo:latest
-      - ghcr.io/kobtea/gorgo:v{{.Version}}
-    use: buildx
-    build_flag_templates:
-      - --platform=linux/amd64
-  - image_templates:
-      - ghcr.io/kobtea/gorgo:latest
-      - ghcr.io/kobtea/gorgo:v{{.Version}}
-    use: buildx
-    build_flag_templates:
-      - --platform=linux/arm64
+dockers_v2:
+  - images:
+      - ghcr.io/kobtea/gorgo
+    tags:
+      - "latest"
+      - "v{{ .Version }}"
+    platforms:
+      - linux/amd64
+      - linux/arm64

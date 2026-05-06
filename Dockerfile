@@ -1,3 +1,4 @@
 FROM scratch
+ARG TARGETPLATFORM
 ENTRYPOINT ["/gorgo"]
-COPY gorgo /
+COPY ${TARGETPLATFORM}/gorgo /gorgo
