@@ -19,10 +19,10 @@ jobs:
         with:
           go-version: ^1.19
       - name: Golangci-lint
-        uses: golangci/golangci-lint-action@v3
+        uses: golangci/golangci-lint-action@v9
         with:
-          version: v1.50.1
-          args: -E gofmt,goimports --timeout 5m0s
+          version: v2.12.1
+          args: --timeout 5m0s
 
   build:
     name: build
