@@ -4,7 +4,7 @@ go 1.25.0
 
 require (
 	github.com/go-git/go-git/v5 v5.19.0
-	github.com/google/go-github/v48 v48.2.0
+	github.com/google/go-github/v86 v86.0.0
 	github.com/open-policy-agent/conftest v0.37.0
 	github.com/spf13/cobra v1.6.1
 	github.com/stretchr/testify v1.11.1
@@ -60,7 +60,7 @@ require (
 	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/google/go-cmp v0.7.0 // indirect
 	github.com/google/go-jsonnet v0.18.0 // indirect
-	github.com/google/go-querystring v1.1.0 // indirect
+	github.com/google/go-querystring v1.2.0 // indirect
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.2.0 // indirect
 	github.com/googleapis/gax-go/v2 v2.7.0 // indirect

@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/google/go-github/v48/github"
+	"github.com/google/go-github/v86/github"
 	"github.com/kobtea/gorgo/config"
 	"github.com/kobtea/gorgo/log"
 	"github.com/kobtea/gorgo/storage"
