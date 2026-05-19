@@ -3,7 +3,7 @@ module github.com/kobtea/gorgo
 go 1.25.0
 
 require (
-	github.com/go-git/go-git/v5 v5.19.0
+	github.com/go-git/go-git/v5 v5.19.1
 	github.com/google/go-github/v48 v48.2.0
 	github.com/open-policy-agent/conftest v0.37.0
 	github.com/spf13/cobra v1.6.1
