@@ -1,6 +1,6 @@
 module github.com/kobtea/gorgo
 
-go 1.25.0
+go 1.26.0
 
 require (
 	github.com/go-git/go-git/v5 v5.19.2
@@ -9,7 +9,7 @@ require (
 	github.com/spf13/cobra v1.6.1
 	github.com/stretchr/testify v1.11.1
 	go.uber.org/zap v1.24.0
-	golang.org/x/oauth2 v0.27.0
+	golang.org/x/oauth2 v0.37.0
 	gopkg.in/yaml.v2 v2.4.0
 )
 
